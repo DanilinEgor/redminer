@@ -1,19 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.4"?>
 <plugin>
-
    <extension
          point="org.eclipse.ui.views">
       <category
             name="Redminer"
-            id="Redminer">
-      </category>
+            id="Redminer"/>
       <view
-            name="Redminer"
-            icon="icons/sample.gif"
             category="Redminer"
             class="redminer.views.Redminer"
-            id="redminer.views.Redminer">
+            icon="icons/sample.gif"
+            id="redminer.views.Redminer"
+            name="Redminer">
       </view>
    </extension>
    <extension
@@ -34,5 +32,57 @@
             file="contexts.xml">
       </contexts>
    </extension>
-
+   <extension
+         point="org.eclipse.ui.handlers">
+      <handler
+            class="redminer.ReconnectHandler"
+            commandId="Redminer.reconnectCommand">
+      </handler>
+      <handler
+            class="redminer.RefreshHandler"
+            commandId="Redminer.refreshCommand">
+      </handler>
+      <handler
+            class="redminer.CreateIssueHandler"
+            commandId="Redminer.createIssueCommand">
+      </handler>
+   </extension>
+   <extension
+         point="org.eclipse.ui.commands">
+      <command
+            id="Redminer.reconnectCommand"
+            name="Reconnect">
+      </command>
+      <command
+            id="Redminer.refreshCommand"
+            name="Refresh">
+      </command>
+      <command
+            id="Redminer.createIssueCommand"
+            name="CreateIssue">
+      </command>
+   </extension>
+   <extension
+         point="org.eclipse.ui.menus">
+      <menuContribution
+            allPopups="false"
+            locationURI="menu:redminer.views.Redminer">
+         <command
+               commandId="Redminer.reconnectCommand"
+               label="Переподключиться"
+               style="push">
+         </command>
+         <command
+               commandId="Redminer.refreshCommand"
+               label="Обновить"
+               style="push">
+         </command>
+         <command
+               commandId="Redminer.createIssueCommand"
+               label="Создать задачу"
+               style="push">
+         </command>
+      </menuContribution>
+   </extension>
+	
 </plugin>

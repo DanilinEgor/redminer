@@ -1,303 +1,368 @@
 package redminer.views;
-
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import org.eclipse.jface.action.Action;
-import org.eclipse.jface.action.IMenuListener;
-import org.eclipse.jface.action.IMenuManager;
-import org.eclipse.jface.action.IToolBarManager;
-import org.eclipse.jface.action.MenuManager;
-import org.eclipse.jface.action.Separator;
-import org.eclipse.nebula.widgets.grid.Grid;
-import org.eclipse.nebula.widgets.grid.GridColumn;
-import org.eclipse.nebula.widgets.grid.GridItem;
+import org.eclipse.nebula.widgets.ganttchart.GanttChart;
+import org.eclipse.nebula.widgets.ganttchart.GanttEvent;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.TreeEditor;
+import org.eclipse.swt.dnd.DND;
+import org.eclipse.swt.dnd.DragSource;
+import org.eclipse.swt.dnd.DragSourceEvent;
+import org.eclipse.swt.dnd.DragSourceListener;
+import org.eclipse.swt.dnd.DropTarget;
+import org.eclipse.swt.dnd.DropTargetAdapter;
+import org.eclipse.swt.dnd.DropTargetEvent;
+import org.eclipse.swt.dnd.TextTransfer;
+import org.eclipse.swt.dnd.Transfer;
+import org.eclipse.swt.events.FocusAdapter;
+import org.eclipse.swt.events.FocusEvent;
+import org.eclipse.swt.events.KeyAdapter;
+import org.eclipse.swt.events.KeyEvent;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.TraverseEvent;
+import org.eclipse.swt.events.TraverseListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.IActionBars;
-import org.eclipse.ui.ISharedImages;
-import org.eclipse.ui.IWorkbenchActionConstants;
-import org.eclipse.ui.PlatformUI;
+import org.eclipse.swt.widgets.Tree;
+import org.eclipse.swt.widgets.TreeColumn;
+import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.part.ViewPart;
 
-import com.taskadapter.redmineapi.RedmineAuthenticationException;
+import redminer.API;
+
 import com.taskadapter.redmineapi.RedmineException;
 import com.taskadapter.redmineapi.RedmineManager;
 import com.taskadapter.redmineapi.bean.Issue;
 import com.taskadapter.redmineapi.bean.IssueRelation;
 
-/**
- * This sample class demonstrates how to plug-in a new workbench view. The view
- * shows data obtained from the model. The sample creates a dummy model on the
- * fly, but a real implementation would connect to the model available either in
- * this or another plug-in (e.g. the workspace). The view is connected to the
- * model using a content provider.
- * <p>
- * The view uses a label provider to define how model objects should be
- * presented in the view. Each view can present the same model objects using
- * different labels and icons, if needed. Alternatively, a single label provider
- * can be shared between views in order to ensure that objects of the same type
- * are presented in the same way everywhere.
- * <p>
- */
-
 public class Redminer extends ViewPart {
-
-	/**
-	 * The ID of the view as specified by the extension.
-	 */
 	public static final String ID = "redminer.views.Redminer";
-
-	private Grid grid;
-	private Action action1;
-
-	private static String redmineHost = "http://localhost/redmine/projects/test";
+	private static String projectAddress = "http://localhost/redmine/projects/test";
+	private static String redmineHost;
 	private static String apiAccessKey = "6e2aba71da02acd7890484201b846ab6682ed52a";
+	private static String login, password;
 	private static String projectKey = "test";
-	private RedmineManager mgr;
-	private ArrayList<Issue> allIssues;
-	private HashSet<Pair<Integer, Integer>> relates, precedes, duplicates, blocks;
+	private static RedmineManager mgr;
+	private static ArrayList<Issue> allIssues = new ArrayList<Issue>();
+	private static ArrayList<Integer> numberIssue = new ArrayList<Integer>();
+	private static ArrayList<GanttEvent> events = new ArrayList<GanttEvent>();
+	private static HashMap<Integer, Issue> issues = new HashMap<Integer, Issue>();
+	private static ArrayList<String> relations = new ArrayList<String>();
+	private static Tree tree;
+	public static GanttChart ganttChart;
+	public static Group connectionGroup;
+	public static Group tasksGroup;
+	public static Group creationGroup;
+	public static Composite composite;
+	private final String SUBJECT = "Название";
+	private final String PRIORITY = "Приоритет";
+	private final String UPDATED = "Последнее обновление";
+	private final String NUMBER = "№";
+	private final static String PRIORITY_LOW = "Низкий";
+	private final static String PRIORITY_NORMAL = "Нормальный";
+	private final static String PRIORITY_HIGH = "Высокий";
+	private final static String PRIORITY_URGENT = "Срочный";
+	private final static String PRIORITY_IMMEDIATE = "Немедленный";
+	private final String CREATE_ISSUE = "Создать задачу";
+	private final String CONNECT = "Подключиться";
+	private final String CONNECTION = "Подключение";
+	private final String ISSUES = "Задачи";
+	private final String ADDRESS = "Адрес проекта:";
+	private final String API_ACCESS_KEY = "Ключ доступа API:";
+	private final String DESCRIPTION = "Описание";
+	private final String CANCEL = "Отмена";
+	private final static String BLOCKED_BY = "заблокирована";
+	private final static String BLOCKS = "блокирует";
+	private final static String RELATED_TO = "связана с";
+	private final static String DUPLICATED_BY = "дублирована";
+	private final static String DUPLICATES = "дублирует";
+	private final static String PRECEDES = "предшествует";
+	private final static String FOLLOWS = "следует за";
+	private final static String CONNECT_WITH_ISSUE = "Соединить с задачей";
+	private final static String DELETE_ISSUE = "Удалить задачу";
+	private final static String SUBTASK = "подзадача";
+	private final String RELATION = "Отношение";
+//	private final String CONNECTION_ERROR = "Ошибка подключения";
+//	private final String CONNECTION_ERROR_MESSAGE = "Невозможно подключиться к заданному серверу с заданным API ключом";
 	
-	/*
-	 * The content provider class is responsible for providing objects to the
-	 * view. It can wrap existing objects in adapters or simply return objects
-	 * as-is. These objects may be sensitive to the current input of the view,
-	 * or ignore it and always show the same content (like Task List, for
-	 * example).
-	 */
-
-	/**
-	 * The constructor.
-	 */
-	public Redminer() {
+	public Redminer() {}
+	
+	static void createParentNodes(TreeItem root) {
+		HashSet<Integer> related_to = new HashSet<Integer>(),
+				 precedes = new HashSet<Integer>(),
+				 follows = new HashSet<Integer>(),
+				 duplicates = new HashSet<Integer>(),
+				 duplicated_by = new HashSet<Integer>(),
+				 blocks = new HashSet<Integer>(),
+				 blocked_by = new HashSet<Integer>(),
+				 subTasks = new HashSet<Integer>();
+		
+		Issue issue = issues.get(Integer.parseInt(root.getText(1)));
+		
+		for (Issue issue1 : allIssues)
+			if (issue.getId().equals(issue1.getParentId()))
+				subTasks.add(issue1.getId());
+		
+		createNodes(root, subTasks, SUBTASK);
+		
+		ArrayList<IssueRelation> relis = (ArrayList<IssueRelation>) issue.getRelations();
+		for (IssueRelation issueRelation : relis) {
+			if (issueRelation.getType().equals("relates"))
+				if (issueRelation.getIssueId() == issue.getId())
+					related_to.add(issueRelation.getIssueToId());
+				else
+					related_to.add(issueRelation.getIssueId());
+			if (issueRelation.getType().equals("blocks")) {
+				if (issueRelation.getIssueId() == issue.getId())
+					blocks.add(issueRelation.getIssueToId());
+				else
+					blocked_by.add(issueRelation.getIssueId());
+			}
+			if (issueRelation.getType().equals("duplicates")) {
+				if (issueRelation.getIssueId() == issue.getId())
+					duplicates.add(issueRelation.getIssueToId());
+				else
+					duplicated_by.add(issueRelation.getIssueId());
+			}
+			if (issueRelation.getType().equals("precedes")) {
+				if (issueRelation.getIssueId() == issue.getId())
+					precedes.add(issueRelation.getIssueToId());
+				else
+					follows.add(issueRelation.getIssueId());
+			}
+		}
+		
+		createNodes(root, blocked_by, BLOCKED_BY);
+		createNodes(root, blocks, BLOCKS);
+		createNodes(root, related_to, RELATED_TO);
+		createNodes(root, duplicated_by, DUPLICATED_BY);
+		createNodes(root, duplicates, DUPLICATES);
+		createNodes(root, precedes, PRECEDES);
+		createNodes(root, follows, FOLLOWS);
 	}
 	
-	private String getPriorityString(int priority){
-		String res = null;
-		switch (priority) {
-		case 3:
-			res = "Low";
-			break;
-		case 4:
-			res = "Normal";
-			break;
-		case 5:
-			res = "High";
-			break;
-		case 6:
-			res = "Urgent";
-			break;
-		case 7:
-			res = "Immediate";
-			break;
+	static void createNodes(TreeItem root, HashSet<Integer> set, String s) {
+		for (Integer toId : set) {
+			TreeItem item3 = new TreeItem(root, SWT.NONE);
+			Issue issueTo = issues.get(toId);
+			item3.setText(0, issueTo.getSubject());
+			item3.setText(1, String.valueOf(toId));
+			item3.setText(2, s);
+			item3.setText(3, issueTo.getPriorityText());
+//			item3.setText(4, issueTo.getUpdatedOn().toString());
+		}
+		set.clear();
+	}
 
-		default:
-			break;
+	public static void updateIssues() {
+		allIssues.clear();
+		issues.clear();
+		numberIssue.clear();
+		try {
+			HashMap<String, String> params = new HashMap<String, String>();
+			params.put("include", "relations");
+//			allIssues = API.getIssues(redmineHost, apiAccessKey);
+			allIssues = (ArrayList<Issue>) mgr.getIssues(params);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		for (Issue issue : allIssues)
+			issues.put(issue.getId(), issue);
+		tree.removeAll();
+		ganttChart.getGanttComposite().clearGanttEvents();
+		
+		while (numberIssue.size() != allIssues.size()) {
+			for (Issue issue : allIssues) 
+				if (!numberIssue.contains(issue.getId()))
+					if (issue.getParentId() == null || numberIssue.contains(issue.getParentId())) {
+						numberIssue.add(issue.getId());
+						TreeItem item = new TreeItem(tree, SWT.NONE);
+						String subject = issue.getSubject();
+						String priorityS = issue.getPriorityText();
+						String date = issue.getUpdatedOn().toString();
+						item.setText(0, subject);
+						item.setText(1, String.valueOf(issue.getId()));
+						item.setText(3, priorityS);
+						item.setText(4, date);
+						createParentNodes(item);
+					}
+		}
+		updateEvents();
+	}
+	
+	private static String getPriorityText(Issue issue) {
+		switch(issue.getPriorityId()){
+		case 3: return PRIORITY_LOW;
+		case 4: return PRIORITY_NORMAL;
+		case 5: return PRIORITY_HIGH;
+		case 6: return PRIORITY_URGENT;
+		case 7: return PRIORITY_IMMEDIATE;
+		default: return "";
+		}
+	}
+
+	public static int getHeight(TreeItem root) {
+		int res = 24;
+		if (root.getExpanded()) {
+			TreeItem[] items = root.getItems();
+			for (TreeItem item : items)
+				res += getHeight(item);
 		}
 		return res;
 	}
 	
-	public void updateIssues() {
-		allIssues = new ArrayList<Issue>();
-		try {
-			HashMap<String, String> params = new HashMap<String, String>();
-			params.put("include", "relations");
-			allIssues = (ArrayList<Issue>) mgr.getIssues(params);
-		} catch (RedmineAuthenticationException e) {
-			e.printStackTrace();
-		} catch (RedmineException e) {
-			e.printStackTrace();
+	public static void updateHeights() {
+		TreeItem[] treeItems = tree.getItems();
+		int[] heights = new int[treeItems.length];
+		for (int i = 0; i < heights.length; ++i)
+			heights[i] = getHeight(treeItems[i]);
+		for (int i = 0; i < events.size(); ++i) {
+			GanttEvent event = events.get(i);
+			event.setFixedRowHeight(heights[i]);
+			events.set(i, event);
+		}
+		ganttChart.redrawGanttChart();
+		updateMenu();
+	}
+	
+	public static void updateEvents() {
+		ganttChart.getGanttComposite().clearGanttEvents();
+		events.clear();
+		
+		for (int i = 0; i < numberIssue.size(); ++i) {
+			int n = numberIssue.get(i);
+			Issue issue = issues.get(n);
+			Date start = issue.getStartDate() == null ? issue.getUpdatedOn() : issue.getStartDate();
+			Date end  = issue.getDueDate() == null ? new Date() : issue.getDueDate();
+			Calendar st = Calendar.getInstance();
+			Calendar en = Calendar.getInstance();
+			st.setTime(start);
+			en.setTime(end);
+			events.add(new GanttEvent(ganttChart, issue.getSubject(), st, en, issue.getDoneRatio()));
 		}
 		
-		try {
-			mgr.createRelation(5, 7, "blocks");
-		} catch (RedmineException e1) {
-			e1.printStackTrace();
-		}
-		
-		relates = new HashSet<Pair<Integer,Integer>>();
-		blocks = new HashSet<Pair<Integer,Integer>>();
-		duplicates = new HashSet<Pair<Integer,Integer>>();
-		precedes = new HashSet<Pair<Integer,Integer>>();
-		
-		for (Issue issue : allIssues) {
-			ArrayList<IssueRelation> relis = (ArrayList<IssueRelation>) issue.getRelations();
+		for (int i = 0; i < numberIssue.size(); ++i) {
+			ArrayList<IssueRelation> relis = (ArrayList<IssueRelation>) issues.get(numberIssue.get(i)).getRelations();
 			for (IssueRelation issueRelation : relis) {
-				Pair<Integer, Integer> p = new Pair<Integer, Integer>(issueRelation.getIssueId(), issueRelation.getIssueToId());
-				if (issueRelation.getType().equals("relates"))
-					relates.add(p);
-				if (issueRelation.getType().equals("blocks"))
-					blocks.add(p);
-				if (issueRelation.getType().equals("duplicates"))
-					duplicates.add(p);
-				if (issueRelation.getType().equals("precedes"))
-					precedes.add(p);
+				int iTo = numberIssue.indexOf(issueRelation.getIssueToId());
+				ganttChart.addConnection(events.get(i), events.get(iTo));
+				ganttChart.addConnection(events.get(iTo), events.get(i));
 			}
 		}
-		
-		grid.removeAll();
-		
-		for (Issue issue : allIssues) {
-			GridItem item1 = new GridItem(grid, SWT.NONE);
-			String subject = issue.getSubject();
-			int priority = issue.getPriorityId();
-			String priorityS = getPriorityString(priority);
-			String date = issue.getUpdatedOn().toString();
-			String assignee = (issue.getAssignee() == null ? "-" : issue.getAssignee().toString());
-			item1.setText(0, subject);
-			item1.setText(1, priorityS);
-			item1.setText(2, assignee);
-			item1.setText(3, date);
-			
-			boolean created = false;
-			GridItem item2 = null;
-			for (Pair<Integer, Integer> pair : relates) {
-				if (pair.getFirst() == issue.getId() || pair.getSecond() == issue.getId()) {
-					int id = (issue.getId() == pair.getFirst() ? pair.getSecond() : pair.getFirst());
-					String subject1 = null, priorityS1 = null, date1 = null, assignee1 = null;
-					for (Issue issue1 : allIssues) {
-						if (issue1.getId() == id) {
-							subject1 = issue1.getSubject();
-							int priority1 = issue1.getPriorityId();
-							priorityS1 = getPriorityString(priority1);
-							date1 = issue1.getUpdatedOn().toString();
-							assignee1 = (issue1.getAssignee() == null ? "-" : issue1.getAssignee().toString());
+		ganttChart.redrawGanttChart();
+	}
+	
+	public static void updateMenu() {
+		final Menu menu = new Menu(tree);
+		tree.setMenu(menu);
+		MenuItem conItem = new MenuItem(menu, SWT.CASCADE);
+		conItem.setText(CONNECT_WITH_ISSUE);
+		MenuItem delItem = new MenuItem(menu, SWT.NONE);
+		delItem.setText(DELETE_ISSUE);
+		delItem.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event event) {
+				TreeItem[] items = tree.getSelection();
+				String idToDelete = items[0].getText(1);
+				int idDel = Integer.parseInt(idToDelete);
+				for (Issue issue : allIssues)
+					if (issue.getId().equals(idDel))
+						try {
+							mgr.deleteIssue(issue.getId());
+						} catch (RedmineException e) {
+							e.printStackTrace();
 						}
-					}
-					if (created == false) {
-						item2 = new GridItem(item1, SWT.NONE);
-						item2.setText("related to");
-						created = true;
-					}
-					GridItem item3 = new GridItem(item2, SWT.NONE);
-					item3.setText(0, subject1);
-					item3.setText(1, priorityS1);
-					item3.setText(2, assignee1);
-					item3.setText(3, date1);
-				}
+				updateIssues();
+				updateEvents();
+				updateHeights();
 			}
-			
-			boolean created1 = false, created2 = false;
-			for (Pair<Integer, Integer> pair : blocks) {
-				if (pair.getFirst() == issue.getId() || pair.getSecond() == issue.getId()) {
-					int id = (issue.getId() == pair.getFirst() ? pair.getSecond() : pair.getFirst());
-					String subject1 = null, priorityS1 = null, date1 = null, assignee1 = null;
-					for (Issue issue1 : allIssues) {
-						if (issue1.getId() == id) {
-							subject1 = issue1.getSubject();
-							int priority1 = issue1.getPriorityId();
-							priorityS1 = getPriorityString(priority1);
-							date1 = issue1.getUpdatedOn().toString();
-							assignee1 = (issue1.getAssignee() == null ? "-" : issue1.getAssignee().toString());
+		});
+		/*
+		TreeItem selectedItem = tree.getSelection()[0];
+		TreeItem[] selItems = selectedItem.getItems();
+		ArrayList<String> nums = new ArrayList<String>();
+		for (TreeItem treeItem : selItems)
+			nums.add(treeItem.getText(1));
+		nums.add(selectedItem.getText(1));
+		*/
+		Menu conMenu =  new Menu(menu);
+		conItem.setMenu(conMenu);
+		TreeItem[] items = tree.getItems();
+		for (final TreeItem treeItem : items) {
+//			if (nums.contains(treeItem.getText(1))) continue;
+			final MenuItem issueItem = new MenuItem(conMenu, SWT.CASCADE);
+			issueItem.setText("№" + treeItem.getText(1) + " " + treeItem.getText(0));
+			Menu issueMenu = new Menu(conMenu);
+			issueItem.setMenu(issueMenu);
+			for (String s : relations) {
+				MenuItem item = new MenuItem(issueMenu, SWT.PUSH);
+				item.setText(s);
+				String rel = null;
+				if (s.equals(RELATED_TO)) rel = "relates";
+				else if (s.equals(BLOCKED_BY)) rel = "blocked";
+				else if (s.equals(BLOCKS)) rel = "blocks";
+				else if (s.equals(DUPLICATED_BY)) rel = "duplicated";
+				else if (s.equals(DUPLICATES)) rel = "duplicates";
+				else if (s.equals(PRECEDES)) rel = "precedes";
+				else if (s.equals(FOLLOWS)) rel = "follows";
+				else if (s.equals(SUBTASK)) rel = "subtask";
+				final String res = rel;
+				item.addListener(SWT.Selection, new Listener() {
+					public void handleEvent(Event event) {
+						if (!res.equals("subtask"))
+							try {
+								API.createRelation(redmineHost, apiAccessKey, login, password, Integer.parseInt(tree.getSelection()[0].getText(1)), Integer.parseInt(treeItem.getText(1)), res);
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+						else {
+							Issue issue = issues.get(Integer.parseInt(treeItem.getText(1))); 
+							issue.setParentId(Integer.parseInt(tree.getSelection()[0].getText(1)));
+							try {
+								mgr.update(issue);
+							} catch (RedmineException e) {
+								e.printStackTrace();
+							}
 						}
+						updateIssues();
 					}
-					if (id == pair.getSecond() && created1 == false) {
-						item2 = new GridItem(item1, SWT.NONE);
-						item2.setText("blocks");
-						created1 = true;
-					}
-					if (id == pair.getFirst() && created2 == false) {
-						item2 = new GridItem(item1, SWT.NONE);
-						item2.setText("blocked by");
-						created2 = true;
-					}
-					GridItem item3 = new GridItem(item2, SWT.NONE);
-					item3.setText(0, subject1);
-					item3.setText(1, priorityS1);
-					item3.setText(2, assignee1);
-					item3.setText(3, date1);
-
-				}
-			}
-			
-			created1 = false;
-			created2 = false;
-			for (Pair<Integer, Integer> pair : duplicates) {
-				if (pair.getFirst() == issue.getId() || pair.getSecond() == issue.getId()) {
-					int id = (issue.getId() == pair.getFirst() ? pair.getSecond() : pair.getFirst());
-					String subject1 = null, priorityS1 = null, date1 = null, assignee1 = null;
-					for (Issue issue1 : allIssues) {
-						if (issue1.getId() == id) {
-							subject1 = issue1.getSubject();
-							int priority1 = issue1.getPriorityId();
-							priorityS1 = getPriorityString(priority1);
-							date1 = issue1.getUpdatedOn().toString();
-							assignee1 = (issue1.getAssignee() == null ? "-" : issue1.getAssignee().toString());
-						}
-					}
-					if (id == pair.getSecond() && created1 == false) {
-						item2 = new GridItem(item1, SWT.NONE);
-						item2.setText("duplicates");
-						created1 = true;
-					}
-					if (id == pair.getFirst() && created2 == false) {
-						item2 = new GridItem(item1, SWT.NONE);
-						item2.setText("duplicated by");
-						created2 = true;
-					}
-					GridItem item3 = new GridItem(item2, SWT.NONE);
-					item3.setText(0, subject1);
-					item3.setText(1, priorityS1);
-					item3.setText(2, assignee1);
-					item3.setText(3, date1);
-				}
-			}
-			
-			created1 = false;
-			created2 = false;
-			for (Pair<Integer, Integer> pair : precedes) {
-				if (pair.getFirst() == issue.getId() || pair.getSecond() == issue.getId()) {
-					int id = (issue.getId() == pair.getFirst() ? pair.getSecond() : pair.getFirst());
-					String subject1 = null, priorityS1 = null, date1 = null, assignee1 = null;
-					for (Issue issue1 : allIssues) {
-						if (issue1.getId() == id) {
-							subject1 = issue1.getSubject();
-							int priority1 = issue1.getPriorityId();
-							priorityS1 = getPriorityString(priority1);
-							date1 = issue1.getUpdatedOn().toString();
-							assignee1 = (issue1.getAssignee() == null ? "-" : issue1.getAssignee().toString());
-						}
-					}
-					if (id == pair.getSecond() && created1 == false) {
-						item2 = new GridItem(item1, SWT.NONE);
-						item2.setText("precedes");
-						created1 = true;
-					}
-					if (id == pair.getFirst() && created2 == false) {
-						item2 = new GridItem(item1, SWT.NONE);
-						item2.setText("follows");
-						created2 = true;
-					}
-					GridItem item3 = new GridItem(item2, SWT.NONE);
-					item3.setText(0, subject1);
-					item3.setText(1, priorityS1);
-					item3.setText(2, assignee1);
-					item3.setText(3, date1);
-				}
+				});
 			}
 		}
 	}
-	
-	
 
-	/**
-	 * This is a callback that will allow us to create the viewer and initialize
-	 * it.
-	 */
 	public void createPartControl(final Composite parent) {
+		composite = new Composite(parent, SWT.NONE);
 
+		relations.add(RELATED_TO);
+		relations.add(BLOCKED_BY);
+		relations.add(BLOCKS);
+		relations.add(PRECEDES);
+		relations.add(FOLLOWS);
+		relations.add(DUPLICATED_BY);
+		relations.add(DUPLICATES);
+		relations.add(SUBTASK);
+		
 		GridLayout l = new GridLayout();
-		parent.setLayout(l);
+		composite.setLayout(l);
 
 		GridData gd = new GridData();
 
@@ -306,15 +371,15 @@ public class Redminer extends ViewPart {
 		gd.grabExcessHorizontalSpace = true;
 		gd.grabExcessVerticalSpace = true;
 
-		final Group connectionGroup = new Group(parent, SWT.NONE);
-		connectionGroup.setText("Connection");
+		connectionGroup = new Group(composite, SWT.NONE);
+		connectionGroup.setText(CONNECTION);
 		connectionGroup.setLayoutData(gd);
 
-		final Group tasksGroup = new Group(parent, SWT.NONE);
-		tasksGroup.setText("Tasks");
+		tasksGroup = new Group(composite, SWT.NONE);
+		tasksGroup.setText(ISSUES);
 		
-		final Group creationGroup = new Group(parent, SWT.NONE);
-		creationGroup.setText("Create Task");
+		creationGroup = new Group(composite, SWT.NONE);
+		creationGroup.setText(CREATE_ISSUE);
 
 
 		gd = new GridData();
@@ -343,14 +408,32 @@ public class Redminer extends ViewPart {
 		gl.numColumns = 2;
 		connectionGroup.setLayout(gl);
 		gl = new GridLayout();
-		gl.numColumns = 5;
+		gl.numColumns = 4;
 		creationGroup.setLayout(gl);
-		gl = new GridLayout();
-		gl.numColumns = 5;
+		gl = new GridLayout(2, true);
 		tasksGroup.setLayout(gl);
+		
+		gd = new GridData();
+
+		gd.horizontalAlignment = SWT.FILL;
+		gd.verticalAlignment = SWT.FILL;
+		gd.grabExcessHorizontalSpace = true;
+		gd.horizontalSpan = 2;
+
+		Group authGroup = new Group(connectionGroup, SWT.NONE);
+		authGroup.setLayout(new RowLayout(SWT.VERTICAL));
+		authGroup.setText("Способ аутентификации");
+		authGroup.setLayoutData(gd);
+		
+		Button lp = new Button(authGroup, SWT.RADIO);
+		lp.setText("Логин/пароль");
+		lp.setSelection(true);
+		
+		final Button aak = new Button(authGroup, SWT.RADIO);
+		aak.setText("API access key");
 
 		Label addressLabel = new Label(connectionGroup, SWT.NONE);
-		addressLabel.setText("Address:");
+		addressLabel.setText(ADDRESS);
 
 		gd = new GridData();
 
@@ -360,68 +443,161 @@ public class Redminer extends ViewPart {
 
 		final Text addressText = new Text(connectionGroup, SWT.NONE);
 		addressText.setLayoutData(gd);
-		addressText.setText(redmineHost);
+		addressText.setText(projectAddress);
 
-		Label keyLabel = new Label(connectionGroup, SWT.NONE);
-		keyLabel.setText("API access key:");
+		gd = new GridData();
 
+		gd.verticalAlignment = SWT.FILL;
+		gd.exclude = true;
+		
+		final Label keyLabel = new Label(connectionGroup, SWT.NONE);
+		keyLabel.setLayoutData(gd);
+		keyLabel.setVisible(false);
+		keyLabel.setText(API_ACCESS_KEY);
+		
+		gd = new GridData();
+		gd.horizontalAlignment = SWT.FILL;
+		gd.verticalAlignment = SWT.FILL;
+		gd.grabExcessHorizontalSpace = true;
+		gd.exclude = true;
+
+		
 		final Text accessKey = new Text(connectionGroup, SWT.NONE);
 		accessKey.setLayoutData(gd);
 		accessKey.setText(apiAccessKey);
+		accessKey.setVisible(false);
+		
+		gd = new GridData();
+
+		gd.horizontalAlignment = SWT.FILL;
+		gd.verticalAlignment = SWT.FILL;
+		gd.grabExcessHorizontalSpace = true;
+		
+		final Label loginLabel = new Label(connectionGroup, SWT.NONE);
+//		loginLabel.setLayoutData(gd);
+		loginLabel.setText("Логин:");
+
+		final Text loginText = new Text(connectionGroup, SWT.NONE);
+		loginText.setLayoutData(gd);
+		loginText.setText("admin");
+		
+		final Label passLabel = new Label(connectionGroup, SWT.NONE);
+//		passLabel.setLayoutData(gd);
+		passLabel.setText("Пароль:");
+
+		final Text passText = new Text(connectionGroup, SWT.NONE);
+		passText.setLayoutData(gd);
+		passText.setText("admin");
+		
+		lp.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				GridData gd = (GridData)loginLabel.getLayoutData();
+				gd.exclude = false;
+				loginLabel.setVisible(true);
+				
+				gd = (GridData)loginText.getLayoutData();
+				gd.exclude = false;
+				loginText.setVisible(true);
+				
+				gd = (GridData)passLabel.getLayoutData();
+				gd.exclude = false;
+				passLabel.setVisible(true);
+				
+				gd = (GridData)passText.getLayoutData();
+				gd.exclude = false;
+				passText.setVisible(true);
+				
+				gd = (GridData)accessKey.getLayoutData();
+				gd.exclude = true;
+				accessKey.setVisible(false);
+				
+				gd = (GridData)keyLabel.getLayoutData();
+				gd.exclude = true;
+				keyLabel.setVisible(false);
+				connectionGroup.layout(true);
+			}
+		});
+		
+		aak.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				GridData gd = (GridData)loginLabel.getLayoutData();
+				gd.exclude = true;
+				loginLabel.setVisible(false);
+				
+				gd = (GridData)loginText.getLayoutData();
+				gd.exclude = true;
+				loginText.setVisible(false);
+				
+				gd = (GridData)passLabel.getLayoutData();
+				gd.exclude = true;
+				passLabel.setVisible(false);
+				
+				gd = (GridData)passText.getLayoutData();
+				gd.exclude = true;
+				passText.setVisible(false);
+				
+				gd = (GridData)accessKey.getLayoutData();
+				gd.exclude = false;
+				accessKey.setVisible(true);
+				
+				gd = (GridData)keyLabel.getLayoutData();
+				gd.exclude = false;
+				keyLabel.setVisible(true);
+				connectionGroup.layout(true);
+			}
+		});
+		
+		
 
 		Button connectButton = new Button(connectionGroup, SWT.PUSH);
-		connectButton.setText("Connect");
+		connectButton.setText(CONNECT);
 		gd = new GridData();
 		connectButton.setLayoutData(gd);
 
-		Button buttonGantt = new Button(tasksGroup, SWT.PUSH);
-		buttonGantt.setText("Gantt");
-		buttonGantt.pack();
-		buttonGantt.setLayoutData(gd);
-
-		final Button buttonReconnect = new Button(tasksGroup, SWT.PUSH);
-		buttonReconnect.setText("Reconnect");
-		buttonReconnect.pack();
-		buttonReconnect.setLayoutData(gd);
-		
-		final Button buttonUpdate = new Button(tasksGroup, SWT.PUSH);
-		buttonUpdate.setText("Update");
-		buttonUpdate.pack();
-		buttonUpdate.setLayoutData(gd);
-		
-		final Button buttonCreate = new Button(tasksGroup, SWT.PUSH);
-		buttonCreate.setText("Create Issue");
-		buttonCreate.setLayoutData(gd);
-		
-		final Button buttonDelete = new Button(tasksGroup, SWT.PUSH);
-		buttonDelete.setText("Delete Issue");
-		buttonDelete.setLayoutData(gd);
 		
 		gd = new GridData();
-		gd.horizontalSpan = 5;
+		gd.horizontalSpan = 2;
 		gd.horizontalAlignment = SWT.FILL;
+		gd.verticalAlignment = SWT.FILL;
+		Composite t = new Composite(tasksGroup, SWT.NONE);
+		t.setLayoutData(gd);
+		t.setLayout(new RowLayout());
+		gd = new GridData();
 		gd.grabExcessHorizontalSpace = true;
 		gd.verticalAlignment = SWT.FILL;
 		gd.grabExcessVerticalSpace = true;
 		
-		grid = new Grid(tasksGroup, SWT.BORDER | SWT.V_SCROLL | SWT.H_SCROLL);
-	    grid.setHeaderVisible(true);
-	    GridColumn col1 = new GridColumn(grid, SWT.NONE);
-	    col1.setTree(true);
-	    col1.setText("Subject");
-	    col1.setWidth(300);
-	    GridColumn col2 = new GridColumn(grid, SWT.NONE);
-	    col2.setText("Priority");
-	    col2.setWidth(100);
-	    GridColumn col3 = new GridColumn(grid, SWT.NONE);
-	    col3.setText("Assigned to");
-	    col3.setWidth(250);
-	    GridColumn col4 = new GridColumn(grid, SWT.NONE);
-	    col4.setText("Updated");
-	    col4.setWidth(250);
+		tree = new Tree(tasksGroup, SWT.BORDER | SWT.V_SCROLL | SWT.H_SCROLL);
+	    tree.setHeaderVisible(true);
 	    
-	    grid.setLayoutData(gd);
-		
+	    TreeColumn col0 = new TreeColumn(tree, SWT.NONE);
+	    col0.setText(SUBJECT);
+	    col0.setWidth(200);
+	    TreeColumn col1 = new TreeColumn(tree, SWT.NONE);
+	    col1.setText(NUMBER);
+	    col1.setWidth(50);
+	    TreeColumn col2 = new TreeColumn(tree, SWT.NONE);
+	    col2.setText(RELATION);
+	    col2.setWidth(200);
+	    TreeColumn col3 = new TreeColumn(tree, SWT.NONE);
+	    col3.setText(PRIORITY);
+	    col3.setWidth(100);
+	    TreeColumn col4 = new TreeColumn(tree, SWT.NONE);
+	    col4.setText(UPDATED);
+	    col4.setWidth(200);
+	    
+	    tree.setLayoutData(gd);
+
+	    gd = new GridData();
+
+		gd.horizontalAlignment = SWT.FILL;
+		gd.verticalAlignment = SWT.FILL;
+	    
+		ganttChart = new GanttChart(tasksGroup, SWT.NONE);
+	    ganttChart.setLayoutData(gd);
+	    
 		gd = new GridData();
 
 		gd.horizontalAlignment = SWT.FILL;
@@ -429,7 +605,7 @@ public class Redminer extends ViewPart {
 		gd.horizontalSpan = 1;
 		
 		Label subjectLabel = new Label(creationGroup, SWT.NONE);
-		subjectLabel.setText("Subject");
+		subjectLabel.setText(SUBJECT);
 		subjectLabel.setLayoutData(gd);
 		
 		gd = new GridData();
@@ -449,7 +625,7 @@ public class Redminer extends ViewPart {
 		gd.horizontalSpan = 1;
 		
 		Label descriptionLabel = new Label(creationGroup, SWT.NONE);
-		descriptionLabel.setText("Description");
+		descriptionLabel.setText(DESCRIPTION);
 		descriptionLabel.setLayoutData(gd);
 
 		gd = new GridData();
@@ -469,7 +645,7 @@ public class Redminer extends ViewPart {
 		gd.verticalAlignment = SWT.FILL;
 		
 		Label priorityLabel = new Label(creationGroup, SWT.NONE);
-		priorityLabel.setText("Priority");
+		priorityLabel.setText(PRIORITY);
 		priorityLabel.setLayoutData(gd);
 		
 		gd = new GridData();
@@ -480,18 +656,14 @@ public class Redminer extends ViewPart {
 		gd.horizontalSpan = 1;
 		
 		final Combo priorityCombo = new Combo(creationGroup, SWT.READ_ONLY);
-		priorityCombo.setItems(new String[]{"Low", "Normal", "High", "Urgent", "Immediate"});
+		priorityCombo.setItems(new String[]{PRIORITY_LOW, PRIORITY_NORMAL, PRIORITY_HIGH, PRIORITY_URGENT, PRIORITY_IMMEDIATE});
 		priorityCombo.setLayoutData(gd);
-		priorityCombo.setText("Normal");
+		priorityCombo.setText(PRIORITY_NORMAL);
 		
 		gd = new GridData();
 
 		gd.horizontalAlignment = SWT.FILL;
 		gd.verticalAlignment = SWT.FILL;
-		
-		Label assigneeLabel = new Label(creationGroup, SWT.NONE);
-		assigneeLabel.setText("Assigned to");
-		assigneeLabel.setLayoutData(gd);
 		
 		gd = new GridData();
 
@@ -500,24 +672,245 @@ public class Redminer extends ViewPart {
 		gd.grabExcessHorizontalSpace = true;
 		gd.horizontalSpan = 2;
 		
-		final Combo assigneeCombo = new Combo(creationGroup, SWT.READ_ONLY);
-		assigneeCombo.setLayoutData(gd);
-		
 		final Button buttonCreateIssue = new Button(creationGroup, SWT.PUSH);
-		buttonCreateIssue.setText("Create Issue");
+		buttonCreateIssue.setText(CREATE_ISSUE);
 		
 		final Button buttonCancel = new Button(creationGroup, SWT.PUSH);
-		buttonCancel.setText("Cancel");
+		buttonCancel.setText(CANCEL);
+		
+		Transfer[] types = new Transfer[] { TextTransfer.getInstance() };
+		final TreeItem dragItem[] = new TreeItem[1];
+		DragSource source = new DragSource(tree, DND.DROP_MOVE | DND.DROP_COPY | DND.DROP_LINK);
+		source.setTransfer(types);
+		source.addDragListener(new DragSourceListener() {
+			
+			@Override
+			public void dragStart(DragSourceEvent event) {
+				if (tree.getSelectionCount() > 1)
+					event.doit = false;
+				else {
+					dragItem[0] = tree.getSelection()[0];
+					event.doit = true;
+				}
+			}
+			
+			@Override
+			public void dragSetData(DragSourceEvent event) {
+				event.data = tree.getSelection()[0].getText(1);
+			}
+			
+			@Override
+			public void dragFinished(DragSourceEvent event) {
+				dragItem[0] = null;
+			}
+		});
+		
+		DropTarget target = new DropTarget(tree, DND.DROP_MOVE | DND.DROP_COPY | DND.DROP_LINK);
+		target.setTransfer(types);		
+		target.addDropListener(new DropTargetAdapter() {
+			public void drop(DropTargetEvent event){
+				Issue draggedIssue = issues.get(Integer.parseInt((String)event.data));
+				TreeItem item = (TreeItem)event.item;
+				TreeItem[] childItems = item.getItems();
+				boolean out = false;
+				for (TreeItem treeItem : childItems)
+					if (treeItem.getText(1).equals(draggedIssue.getId().toString())) out = true;
+				if (!out && (Integer.parseInt(((TreeItem)event.item).getText(1)) != draggedIssue.getId())) {
+					String[] itemText = new String[tree.getColumnCount()];
+					String rel = new RelationDialog().showDialog(draggedIssue, issues.get(Integer.parseInt(((TreeItem)event.item).getText(1))));
+					if (!rel.equals("no")) {
+						TreeItem newItem = new TreeItem((TreeItem)event.item, SWT.NONE);
+						String rel1 = null;
+						if (rel.equals("relates")) rel1 = RELATED_TO;
+						else if (rel.equals("blocked")) rel1 = BLOCKED_BY;
+						else if (rel.equals("blocks")) rel1 = BLOCKS;
+						else if (rel.equals("duplicated")) rel1 = DUPLICATED_BY;
+						else if (rel.equals("duplicates")) rel1 = DUPLICATES;
+						else if (rel.equals("precedes")) rel1 = PRECEDES;
+						else if (rel.equals("follows")) rel1 = FOLLOWS;
+						else if (rel.equals("subtask")) rel1 = SUBTASK;
+						itemText[0] = draggedIssue.getSubject();
+						itemText[1] = String.valueOf(draggedIssue.getId());
+						itemText[2] = rel1;
+						itemText[3] = draggedIssue.getPriorityText();
+						itemText[4] = draggedIssue.getUpdatedOn().toString();
+						if (rel.equals("subtask")) {
+							draggedIssue.setParentId(Integer.parseInt(((TreeItem)event.item).getText(1)));
+							try {
+								mgr.update(draggedIssue);
+							} catch (RedmineException e) {
+								e.printStackTrace();
+							}
+						}
+						else {
+							try {
+								API.createRelation(redmineHost, apiAccessKey, login, password, draggedIssue.getId(), Integer.parseInt(((TreeItem)event.item).getText(1)), rel);
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+						}
+						newItem.setText(itemText);
+						
+						
+						TreeItem items[] = tree.getItems();
+						TreeItem parentItem = null;
+						for (TreeItem treeItem : items) {
+							if (treeItem.getText(1).equals(draggedIssue.getId().toString())) {parentItem = treeItem; break;} 
+						}
+						TreeItem newItem1 = new TreeItem(parentItem, SWT.NONE);
+						if (rel.equals("relates")) rel = RELATED_TO;
+						else if (rel.equals("blocked")) rel = BLOCKS;
+						else if (rel.equals("blocks")) rel = BLOCKED_BY;
+						else if (rel.equals("duplicated")) rel = DUPLICATES;
+						else if (rel.equals("duplicates")) rel = DUPLICATED_BY;
+						else if (rel.equals("precedes")) rel = FOLLOWS;
+						else if (rel.equals("follows")) rel = PRECEDES;
+						itemText[0] = item.getText(0);
+						itemText[1] = item.getText(1);
+						itemText[2] = rel;
+						itemText[3] = item.getText(3);
+						itemText[4] = item.getText(4);
+						newItem1.setText(itemText);
+						
+						createParentNodes(newItem);
+						createParentNodes(newItem1);
+						
+						Display.getCurrent().asyncExec(new Runnable() {
+							@Override
+							public void run() {
+								updateEvents();
+								updateHeights();
+							}
+						});
+					}
+				}
+			};
+		});
 		
 		
+		tree.addListener(SWT.Expand, new Listener() {
+			@Override
+			public void handleEvent(Event event) {
+				Display d = Display.getCurrent();
+				TreeItem item = (TreeItem)event.item;
+				TreeItem[] items = item.getItems();
+				for (TreeItem treeItem : items)
+					createParentNodes(treeItem);
+				d.asyncExec(new Runnable() {
+					@Override
+					public void run() {
+						updateEvents();
+						updateHeights();
+					}
+				});
+			}
+		});
+		tree.addListener(SWT.Collapse, new Listener() {
+			@Override
+			public void handleEvent(Event event) {
+				Display d = Display.getCurrent();
+				TreeItem item = (TreeItem)event.item;
+				TreeItem[] items = item.getItems();
+				for (TreeItem treeItem : items) {
+					TreeItem[] items1 = treeItem.getItems();
+					for (TreeItem treeItem1 : items1) {
+						treeItem1.dispose();
+					}
+				}
+				d.asyncExec(new Runnable() {
+					@Override
+					public void run() {
+						updateEvents();
+						updateHeights();
+					}
+				});
+			}
+		});
+		
+		tree.addTraverseListener(new TraverseListener() {
+			
+			@Override
+			public void keyTraversed(TraverseEvent e) {
+				if (e.detail == 32) System.out.println("ctrl <-");
+				if (e.detail == 64) System.out.println("ctrl ->");
+			}
+		});
+		
+	    final TreeEditor editor = new TreeEditor(tree);
+	    editor.horizontalAlignment = SWT.LEFT;
+	    editor.grabHorizontal = true;
+	    
+	    tree.addKeyListener(new KeyAdapter() {
+	      public void keyPressed(KeyEvent event) {
+	        if (event.keyCode == SWT.F2 && tree.getSelectionCount() == 1) {
+	          final TreeItem item = tree.getSelection()[0];
 
+	          final Text text = new Text(tree, SWT.NONE);
+	          text.setText(item.getText());
+	          text.selectAll();
+	          text.setFocus();
+
+	          text.addFocusListener(new FocusAdapter() {
+	            public void focusLost(FocusEvent event) {
+	              item.setText(text.getText());
+	              Issue issue = issues.get(Integer.parseInt(item.getText(1)));
+	              issue.setSubject(text.getText());
+	              try {
+					mgr.update(issue);
+				} catch (RedmineException e) {
+					e.printStackTrace();
+				}
+	              text.dispose();
+	            }
+	          });
+
+	          text.addKeyListener(new KeyAdapter() {
+	            public void keyPressed(KeyEvent event) {
+	              switch (event.keyCode) {
+	              case SWT.CR:
+	                item.setText(text.getText());
+	                Issue issue = issues.get(Integer.parseInt(item.getText(1)));
+		            issue.setSubject(text.getText());
+		            try {
+						mgr.update(issue);
+					} catch (RedmineException e) {
+						e.printStackTrace();
+					}
+	              case SWT.ESC:
+	                text.dispose();
+	                break;
+	              }
+	            }
+	          });
+
+	          editor.setEditor(text, item);
+	        }
+	        else if (event.keyCode == SWT.F3 && tree.getSelectionCount() == 1) {
+	        	TreeItem item = tree.getSelection()[0];
+				Issue issue = issues.get(Integer.parseInt(item.getText(1)));
+				IssueDialog d = new IssueDialog();
+				d.open(redmineHost, apiAccessKey, login, password, issue, issues, numberIssue, mgr);
+	        }
+	      }
+	    });
+		
+		
+		
 		Listener bConnectListener = new Listener() {
 
 			@Override
 			public void handleEvent(Event event) {
-				redmineHost = addressText.getText();
-				apiAccessKey = accessKey.getText();
-				mgr = new RedmineManager(redmineHost, apiAccessKey);
+				projectAddress = addressText.getText();
+				redmineHost = projectAddress.substring(0, projectAddress.substring(0, projectAddress.lastIndexOf('/')).lastIndexOf('/'));
+				if (aak.getSelection() == true)
+					apiAccessKey = accessKey.getText();
+				else {
+					login = loginText.getText();
+					password = passText.getText();
+				}
+				
+				mgr = new RedmineManager(projectAddress, apiAccessKey);
+				
 				GridData gd = (GridData) connectionGroup.getLayoutData();
 				gd.exclude = true;
 				connectionGroup.setVisible(false);
@@ -530,101 +923,16 @@ public class Redminer extends ViewPart {
 				gd.exclude = false;
 				tasksGroup.setVisible(true);
 				
-				parent.layout(true);
+				composite.layout(true);
 				
 				updateIssues();
+				updateEvents();
+				updateMenu();
 			}
 		};
 
 		connectButton.addListener(SWT.Selection, bConnectListener);
 
-		Listener bGanttListener = new Listener() {
-			@Override
-			public void handleEvent(Event event) {
-				HashSet<Pair<Integer, Integer>> relations = new HashSet<Pair<Integer,Integer>>();
-				HashSet<Pair<Integer, Integer>> relations1 = new HashSet<Pair<Integer,Integer>>();
-				for (Pair<Integer, Integer> pair : relates) {
-					relations1.add(pair);
-				}
-				for (Pair<Integer, Integer> pair : blocks) {
-					relations.add(pair);
-				}
-				for (Pair<Integer, Integer> pair : duplicates) {
-					relations.add(pair);
-				}
-				for (Pair<Integer, Integer> pair : precedes) {
-					relations.add(pair);
-				}
-				final GanttDiagram demo = new GanttDiagram(allIssues, relations, relations1);
-			}
-		};
-		
-		buttonGantt.addListener(SWT.Selection, bGanttListener);
-
-		Listener bReconnectListener = new Listener() {
-
-			@Override
-			public void handleEvent(Event event) {
-				GridData gd = (GridData) connectionGroup.getLayoutData();
-				gd.exclude = false;
-				connectionGroup.setVisible(true);
-
-				gd = (GridData) tasksGroup.getLayoutData();
-				gd.exclude = true;
-				tasksGroup.setVisible(false);
-				
-				gd = (GridData) creationGroup.getLayoutData();
-				gd.exclude = true;
-				creationGroup.setVisible(false);
-
-				parent.layout(true);
-			}
-
-		};
-
-		buttonReconnect.addListener(SWT.Selection, bReconnectListener);
-		
-		Listener bCreateListener = new Listener() {
-			
-			@Override
-			public void handleEvent(Event event) {
-				/*
-				 * ArrayList<User> users = null;
-				try {
-					users = (ArrayList<User>) mgr.getUsers();
-				} catch (RedmineException e) {
-					e.printStackTrace();
-				}
-				String[] usersS = new String[users.size()];
-				int i = 0;
-				for (User user : users) {
-					usersS[i++] = user.getFullName();
-				}
-				
-				assigneeCombo.setItems(usersS);
-				assigneeCombo.setText(users.get(0).getFullName());
-				 */
-				assigneeCombo.setItems(new String[]{"Redmine Admin"});
-				assigneeCombo.setText("Redmine Admin");
-				
-				GridData gd = (GridData) connectionGroup.getLayoutData();
-				gd.exclude = true;
-				connectionGroup.setVisible(false);
-
-				gd = (GridData) tasksGroup.getLayoutData();
-				gd.exclude = true;
-				tasksGroup.setVisible(false);
-				
-				gd = (GridData) creationGroup.getLayoutData();
-				gd.exclude = false;
-				creationGroup.setVisible(true);
-				
-				parent.layout(true);
-			}
-		};
-		
-		buttonCreate.addListener(SWT.Selection, bCreateListener);
-		
 		Listener bCreateIssueListener = new Listener() {
 			
 			@Override
@@ -644,64 +952,40 @@ public class Redminer extends ViewPart {
 
 					String priority = priorityCombo.getText();
 					int priorityId = 0;
-					if (priority == "Low")
+					if (priority == PRIORITY_LOW)
 						priorityId = 3;
-					if (priority == "Normal")
+					if (priority == PRIORITY_NORMAL)
 						priorityId = 4;
-					if (priority == "High")
+					if (priority == PRIORITY_HIGH)
 						priorityId = 5;
-					if (priority == "Urgent")
+					if (priority == PRIORITY_URGENT)
 						priorityId = 6;
-					if (priority == "Immediate")
+					if (priority == PRIORITY_IMMEDIATE)
 						priorityId = 7;
 
 					Issue issue = new Issue();
 					issue.setSubject(subjectText.getText());
 					issue.setPriorityId(priorityId);
 					issue.setDescription(descriptionText.getText());
+					issue.setStartDate(new Date());
 					try {
 						mgr.createIssue(projectKey, issue);
 					} catch (RedmineException e) {
 						e.printStackTrace();
 					}
+					
+					subjectText.setText("");
+					descriptionText.setText("");
+					priorityCombo.setText(PRIORITY_NORMAL);
 
 					updateIssues();
+					updateEvents();
+					updateHeights();
 				}
 			}
 		};
 		
 		buttonCreateIssue.addListener(SWT.Selection, bCreateIssueListener);
-		
-		Listener bDeleteListener = new Listener() {
-			
-			@Override
-			public void handleEvent(Event event) {
-				GridItem[] items = grid.getSelection();
-				if (items[0].getText(0) != "Tasks") {
-					for (Issue issue : allIssues) {
-						if (issue.getSubject().equals(items[0].getText(0)))
-							try {
-								mgr.deleteIssue(issue.getId());
-							} catch (RedmineException e) {
-								e.printStackTrace();
-							}
-					}
-				}
-				updateIssues();
-			}
-		};
-		
-		buttonDelete.addListener(SWT.Selection, bDeleteListener);
-		
-		Listener bUpdateListener = new Listener() {
-			
-			@Override
-			public void handleEvent(Event event) {
-				updateIssues();
-			}
-		};
-		
-		buttonUpdate.addListener(SWT.Selection, bUpdateListener);
 		
 		Listener bCancelListener = new Listener() {
 			
@@ -718,79 +1002,13 @@ public class Redminer extends ViewPart {
 				gd = (GridData) creationGroup.getLayoutData();
 				gd.exclude = true;
 				creationGroup.setVisible(false);
-				updateIssues();
 			}
 		};
 		
 		buttonCancel.addListener(SWT.Selection, bCancelListener);
-		
-		
-		makeActions();
-		hookContextMenu();
-		contributeToActionBars();
 	}
-
-	private void hookContextMenu() {
-		MenuManager menuMgr = new MenuManager("#PopupMenu");
-		menuMgr.setRemoveAllWhenShown(true);
-		menuMgr.addMenuListener(new IMenuListener() {
-			public void menuAboutToShow(IMenuManager manager) {
-				Redminer.this.fillContextMenu(manager);
-			}
-		});
-	}
-
-	private void contributeToActionBars() {
-		IActionBars bars = getViewSite().getActionBars();
-		fillLocalPullDown(bars.getMenuManager());
-		fillLocalToolBar(bars.getToolBarManager());
-	}
-
-	private void fillLocalPullDown(IMenuManager manager) {
-		manager.add(action1);
-		manager.add(new Separator());
-	}
-
-	private void fillContextMenu(IMenuManager manager) {
-		manager.add(action1);
-		// Other plug-ins can contribute there actions here
-		manager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
-	}
-
-	private void fillLocalToolBar(IToolBarManager manager) {
-		manager.add(action1);
-	}
-
-	private void makeActions() {
-		action1 = new Action() {
-			public void run() {
-				HashSet<Pair<Integer, Integer>> relations = new HashSet<Pair<Integer,Integer>>();
-				HashSet<Pair<Integer, Integer>> relations1 = new HashSet<Pair<Integer,Integer>>();
-				for (Pair<Integer, Integer> pair : relates) {
-					relations1.add(pair);
-				}
-				for (Pair<Integer, Integer> pair : blocks) {
-					relations.add(pair);
-				}
-				for (Pair<Integer, Integer> pair : duplicates) {
-					relations.add(pair);
-				}
-				for (Pair<Integer, Integer> pair : precedes) {
-					relations.add(pair);
-				}
-				final GanttDiagram demo = new GanttDiagram(allIssues, relations, relations1);
-			}
-		};
-		action1.setText("Show Gantt Diagram");
-		action1.setToolTipText("Gantt Diagram");
-		action1.setImageDescriptor(PlatformUI.getWorkbench().getSharedImages()
-				.getImageDescriptor(ISharedImages.IMG_OBJS_INFO_TSK));
-	}
-
-	/**
-	 * Passing the focus request to the viewer's control.
-	 */
-	public void setFocus() {
-//		tree.setFocus();
-	}
+	
+	@Override
+	public void setFocus() {}
+	
 }

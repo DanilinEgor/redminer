@@ -1,20 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry exported="true" kind="lib" path="org.eclipse.nebula.widgets.grid_1.0.0.jar"/>
-	<classpathentry exported="true" kind="lib" path="org.eclipse.nebula.widgets.ganttchart-2.0-NIGHTLY.jar"/>
-	<classpathentry exported="true" kind="lib" path="redmine-java-api-1.21.jar" sourcepath="/home/egor/workspace/Redminer/redmine-java-api-1.21-sources.jar">
+	<classpathentry exported="true" kind="lib" path="/home/egor/Downloads/google-gson-2.2.4/gson-2.2.4.jar" sourcepath="/home/egor/Downloads/google-gson-2.2.4/gson-2.2.4-sources.jar">
 		<attributes>
-			<attribute name="javadoc_location" value="jar:file:/home/egor/workspace/Redminer/redmine-java-api-1.21-javadoc.jar!/"/>
+			<attribute name="javadoc_location" value="jar:file:/home/egor/Downloads/google-gson-2.2.4/gson-2.2.4-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry exported="true" kind="lib" path="json-simple-1.1.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="commons-codec-1.8.jar"/>
+	<classpathentry exported="true" kind="lib" path="jsoup-1.7.2.jar"/>
+	<classpathentry exported="true" kind="lib" path="org.eclipse.nebula.widgets.grid_1.0.0.jar"/>
+	<classpathentry exported="true" kind="lib" path="org.eclipse.nebula.widgets.ganttchart-2.0-NIGHTLY.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
 	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry exported="true" kind="lib" path="apacheds-main-0.9.2.jar"/>
 	<classpathentry exported="true" kind="lib" path="json-20080701.jar"/>
-	<classpathentry exported="true" kind="lib" path="org.apache.httpcomponents.httpclient_4.2.3.jar"/>
-	<classpathentry exported="true" kind="lib" path="org.apache.httpcomponents.httpcore_4.2.3.jar"/>
-	<classpathentry exported="true" kind="lib" path="jcommon-1.0.17.jar"/>
-	<classpathentry exported="true" kind="lib" path="jfreechart-1.0.14.jar"/>
+	<classpathentry exported="true" kind="lib" path="/home/egor/Downloads/redmine-java-api-1.23.jar" sourcepath="/home/egor/Downloads/redmine-java-api-1.23-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/home/egor/Downloads/redmine-java-api-1.23-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="com.soyatec.uml.CONTAINER"/>
+	<classpathentry exported="true" kind="lib" path="/home/egor/Downloads/httpcomponents-client-4.3.2/lib/httpclient-4.3.2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

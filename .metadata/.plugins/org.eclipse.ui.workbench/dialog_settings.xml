@@ -4,22 +4,38 @@
 		<item value="853" key="dialogWidth"/>
 		<item value="480" key="dialogHeight"/>
 		<list key="orderedProviders">
+			<item value="org.eclipse.ui.actions"/>
+			<item value="org.eclipse.ui.commands"/>
 		</list>
 		<list key="textArray">
+			<item value="op"/>
+			<item value="red"/>
 		</list>
 		<list key="orderedElements">
+			<item value="openNewWindow"/>
+			<item value="org.eclipse.ui.navigate.showIn(org.eclipse.ui.navigate.showIn.targetId=redminer.views.Redminer)"/>
 		</list>
 		<list key="textEntries">
+			<item value="1"/>
+			<item value="1"/>
 		</list>
+	</section>
+	<section name="WorkbenchPreferenceDialogSettings">
+		<item value="23" key="DIALOG_Y_ORIGIN"/>
+		<item value="329" key="DIALOG_X_ORIGIN"/>
+	</section>
+	<section name="NewWizardAction">
 	</section>
 	<section name="ShowViewDialog">
 		<item value="376" key="DIALOG_WIDTH"/>
-		<item value="redminer.views.Redminer" key="ShowViewDialog.STORE_SELECTED_VIEW_ID"/>
+		<item value="org.eclipse.ui.views.AllMarkersView" key="ShowViewDialog.STORE_SELECTED_VIEW_ID"/>
 		<item value="90" key="DIALOG_Y_ORIGIN"/>
 		<item value="463" key="DIALOG_X_ORIGIN"/>
 		<item value="443" key="DIALOG_HEIGHT"/>
 		<item value="1|Ubuntu|11.0|0|GTK|1|" key="DIALOG_FONT_NAME"/>
 		<list key="ShowViewDialog.STORE_EXPANDED_CATEGORIES_ID">
+			<item value="org.eclipse.ui"/>
+			<item value="org.eclipse.help.ui"/>
 			<item value="Redminer"/>
 		</list>
 	</section>
