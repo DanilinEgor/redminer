@@ -51,12 +51,13 @@ import com.taskadapter.redmineapi.RedmineException;
 import com.taskadapter.redmineapi.RedmineManager;
 import com.taskadapter.redmineapi.bean.Issue;
 import com.taskadapter.redmineapi.bean.IssueRelation;
+import com.taskadapter.redmineapi.bean.User;
 
 public class Redminer extends ViewPart {
 	public static final String ID = "redminer.views.Redminer";
 	private static String projectAddress = "http://localhost/redmine/projects/test";
-	private static String redmineHost;
-	private static String apiAccessKey = "6e2aba71da02acd7890484201b846ab6682ed52a";
+	public static String redmineHost;
+	public static String apiAccessKey = "6e2aba71da02acd7890484201b846ab6682ed52a";
 	private static String login, password;
 	private static String projectKey = "test";
 	private static RedmineManager mgr;
@@ -924,6 +925,16 @@ public class Redminer extends ViewPart {
 				tasksGroup.setVisible(true);
 				
 				composite.layout(true);
+
+				try {
+					ArrayList<User> users = (ArrayList<User>) mgr.getUsers();
+					for (User user : users) {
+						System.out.println(user);
+					}
+				} catch (RedmineException e) {
+					e.printStackTrace();
+				}
+				
 				
 				updateIssues();
 				updateEvents();

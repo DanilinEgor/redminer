@@ -26,7 +26,10 @@ import org.jsoup.select.Elements;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.taskadapter.redmineapi.bean.Issue;
+import com.taskadapter.redmineapi.bean.User;
 
 public class API {
 	
@@ -197,10 +200,10 @@ public class API {
 		in.close();
 	}
 
-	public static ArrayList<String> getUsers(String redmineHost, String apiAccessKey) throws Exception {
+	public static ArrayList<User> getUsers(String redmineHost, String apiAccessKey) throws Exception {
 		 
 		String url = redmineHost+"/users.json";
- 
+		System.out.println(url);
 		HttpURLConnection con = (HttpURLConnection) (new URL(url)).openConnection();
  
 		String encoding = Base64.encodeBase64String(apiAccessKey.getBytes());
@@ -219,19 +222,32 @@ public class API {
 		in.close();
  
 		String res = response.toString();
+		
+		System.out.println(res);
+		
 		JSONParser parser = new JSONParser();
 		Object obj = parser.parse(res);
 		JSONObject jsonObj = (JSONObject) obj;
 		JSONArray users = (JSONArray)jsonObj.get("users");
 		
-		ArrayList<String> result = new ArrayList<String>();
+		Gson gson = new Gson();
+		System.out.println(users.toJSONString());
+		System.out.println(users.toString());
+		ArrayList<User> u = gson.fromJson(users.toJSONString(), new TypeToken<ArrayList<User>>(){}.getType());
+		for (User user : u) {
+			System.out.println(user.getCreatedOn());
+			System.out.println(user.getLastLoginOn());
+		}
+		
+		/*ArrayList<String> result = new ArrayList<String>();
 		for (Object object : users) {
 			JSONObject user = (JSONObject) object;
 			StringBuilder sb = new StringBuilder();
 			sb.append(user.get("firstname")).append(" ").append(user.get("lastname"));
 			result.add(sb.toString());
 		}
-		return result;
+		*/
+		return u;
 	}
 	
 	public static ArrayList<Issue> getIssues(String redmineHost, String apiAccessKey) throws Exception {
